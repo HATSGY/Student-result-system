@@ -24,7 +24,7 @@ pipeline {
         API_BASE_URL    = 'https://ajg34gqivc.execute-api.ap-southeast-2.amazonaws.com'
         IMAGE_TAG       = "${env.BUILD_NUMBER}"
         APP_DIR         = '.'             // folder containing backend/ and frontend/
-        PATH            = "C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files\\Amazon\\AWSCLIV2;${env.PATH}"
+        PATH            = "C:\\Users\\aryam\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin;${env.PATH}"
     }
 
     stages {
