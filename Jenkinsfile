@@ -16,7 +16,7 @@ pipeline {
 
     environment {
         AWS_REGION      = 'ap-southeast-2'
-        AWS_ACCOUNT_ID  = '123456789012'                      // <-- change
+        AWS_ACCOUNT_ID  = '676175359960'                      // <-- change
         ECR_REGISTRY    = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
         BACKEND_REPO    = 'student-result-backend'
         FRONTEND_REPO   = 'student-result-frontend'
@@ -25,7 +25,7 @@ pipeline {
                 IMAGE_TAG       = "${env.BUILD_NUMBER}"
         BUILDX_NO_DEFAULT_ATTESTATIONS = '1'
         APP_DIR         = '.'             // folder containing backend/ and frontend/
-        PATH            = "C:\\Users\\aryam\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin;${env.PATH}"
+        PATH = "C:\\Users\\aryam\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin;C:\\Program Files\\Amazon\\AWSCLIV2;${env.PATH}"
     }
 
     stages {
