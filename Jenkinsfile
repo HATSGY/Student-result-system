@@ -22,7 +22,8 @@ pipeline {
         FRONTEND_REPO   = 'student-result-frontend'
         LAMBDA_FUNCTION = 'student-result-api'                // <-- container-image Lambda
         API_BASE_URL    = 'https://ajg34gqivc.execute-api.ap-southeast-2.amazonaws.com'
-        IMAGE_TAG       = "${env.BUILD_NUMBER}"
+                IMAGE_TAG       = "${env.BUILD_NUMBER}"
+        BUILDX_NO_DEFAULT_ATTESTATIONS = '1'
         APP_DIR         = '.'             // folder containing backend/ and frontend/
         PATH            = "C:\\Users\\aryam\\AppData\\Local\\Programs\\DockerDesktop\\resources\\bin;${env.PATH}"
     }
@@ -53,7 +54,7 @@ pipeline {
             steps {
                 dir("${APP_DIR}/backend") {
                     // --provenance=false: Lambda rejects OCI image indexes created by buildx attestations.
-                    bat 'docker build --platform linux/amd64 --provenance=false -t %BACKEND_REPO%:%IMAGE_TAG% -t %BACKEND_REPO%:latest . || exit /b 1'
+                    bat 'docker build --platform linux/amd64 -t %BACKEND_REPO%:%IMAGE_TAG% -t %BACKEND_REPO%:latest . || exit /b 1'
                 }
                 dir("${APP_DIR}/frontend") {
                     bat 'docker build --build-arg API_BASE_URL=%API_BASE_URL% -t %FRONTEND_REPO%:%IMAGE_TAG% -t %FRONTEND_REPO%:latest . || exit /b 1'
