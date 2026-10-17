@@ -44,7 +44,7 @@ pipeline {
         stage('Backend tests') {
             steps {
                 dir("${APP_DIR}/backend") {
-                    bat 'docker run --rm -v "%CD%":/app -w /app python:3.12-slim sh -c "pip install -q -r requirements-dev.txt && pytest -q" || exit /b 1'
+                    bat 'docker run --rm -v "%CD%":/app -w /app python:3.12-slim sh -c "pip install -q -r requirements-dev.txt && python -m pytest -q" || exit /b 1'
                 }
             }
         }
