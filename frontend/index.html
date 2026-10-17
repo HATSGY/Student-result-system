@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Student Result Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="login" class="login" hidden>
+  <form id="loginForm" class="panel login-box">
+    <h2>Sign in</h2>
+    <p class="mut">Enter the admin passcode to manage student results.</p>
+    <label for="passcode">Admin passcode</label>
+    <input id="passcode" type="password" autocomplete="current-password" required>
+    <button class="btn pri" type="submit">Sign in</button>
+  </form>
+</div>
+
+<div class="app">
+  <aside>
+    <div class="brand">Student Result System</div>
+    <nav>
+      <button data-nav="dashboard" class="on">Dashboard</button>
+      <button data-nav="add">Add Student</button>
+      <button data-nav="students">Students</button>
+      <button data-nav="search">Search</button>
+    </nav>
+  </aside>
+
+  <main>
+    <header class="top">
+      <div>
+        <h1>Student Result Management System</h1>
+        <p class="mut">Serverless AWS Application</p>
+      </div>
+      <button class="btn" id="logoutBtn">Sign out</button>
+    </header>
+
+    <section id="sec-dashboard">
+      <div class="stats">
+        <div class="panel stat"><span>Total students</span><b class="num" id="cTotal">–</b></div>
+        <div class="panel stat ok"><span>Passed</span><b class="num" id="cPass">–</b></div>
+        <div class="panel stat bad"><span>Failed</span><b class="num" id="cFail">–</b></div>
+        <div class="panel stat"><span>Average percentage</span><b class="num" id="cAvg">–</b></div>
+      </div>
+      <div class="actions">
+        <button class="btn pri" data-nav="add">+ Add Student</button>
+        <button class="btn" data-nav="students">View Students</button>
+        <button class="btn" data-nav="search">Search Student</button>
+      </div>
+      <div class="two">
+        <div class="panel"><h2>Recently added</h2><div id="recentBox"></div></div>
+        <div class="panel"><h2>Percentage distribution</h2><div id="distBox"></div></div>
+      </div>
+    </section>
+
+    <section id="sec-add" hidden>
+      <div class="panel">
+        <h2>Add student</h2>
+        <p class="mut">Total, percentage and result are calculated on the server when you save.</p>
+        <form id="addForm" novalidate></form>
+      </div>
+    </section>
+
+    <section id="sec-students" hidden>
+      <div class="panel">
+        <div class="bar"><h2>Students</h2><button class="btn" id="refreshBtn">Refresh</button></div>
+        <div id="studentsBox"></div>
+      </div>
+    </section>
+
+    <section id="sec-search" hidden>
+      <div class="panel">
+        <h2>Search students</h2>
+        <div class="sbar"><input id="searchInput" type="search" placeholder="Roll number or student name" aria-label="Search students"></div>
+        <div id="searchBox"></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<dialog id="viewDlg" class="wide">
+  <div class="dbody">
+    <div id="viewCard"></div>
+    <div class="foot noprint">
+      <button class="btn" data-close>Close</button>
+      <button class="btn pri" id="printBtn">Print result</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="editDlg" class="wide">
+  <div class="dbody">
+    <h2>Edit student</h2>
+    <p class="mut">Roll number can't be changed. Results are recalculated when you save.</p>
+    <form id="editForm" novalidate></form>
+    <div class="foot">
+      <button class="btn" data-close>Cancel</button>
+      <button class="btn pri" type="submit" form="editForm" id="editSave">Save changes</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="delDlg">
+  <div class="dbody">
+    <h2>Delete student</h2>
+    <p>Are you sure you want to delete this student?</p>
+    <p class="mut" id="delText"></p>
+    <div class="foot">
+      <button class="btn" data-close>Cancel</button>
+      <button class="btn bad" id="delConfirm">Delete</button>
+    </div>
+  </div>
+</dialog>
+
+<div id="toasts" aria-live="polite"></div>
+<script src="script.js"></script>
+</body>
+</html>

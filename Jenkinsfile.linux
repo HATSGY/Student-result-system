@@ -1,0 +1,117 @@
+// Declarative pipeline: test -> build Docker images -> push to ECR -> deploy.
+// Jenkins agent needs: Docker, AWS CLI.
+// Jenkins credentials needed:
+//   aws-credentials  (type: "AWS Credentials" – needs the CloudBees AWS Credentials plugin)
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    parameters {
+        booleanParam(name: 'DEPLOY', defaultValue: false, description: 'Push images to ECR and deploy')
+    }
+
+    environment {
+        AWS_REGION      = 'ap-southeast-2'
+        AWS_ACCOUNT_ID  = '123456789012'                      // <-- change
+        ECR_REGISTRY    = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        BACKEND_REPO    = 'student-result-backend'
+        FRONTEND_REPO   = 'student-result-frontend'
+        LAMBDA_FUNCTION = 'student-result-api'                // <-- container-image Lambda
+        API_BASE_URL    = 'https://ajg34gqivc.execute-api.ap-southeast-2.amazonaws.com'
+        IMAGE_TAG       = "${env.BUILD_NUMBER}"
+        APP_DIR         = 'student-result-system'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps { checkout scm }
+        }
+
+        stage('Backend tests') {
+            steps {
+                dir("${APP_DIR}/backend") {
+                    // Run inside a throwaway Python container so the agent needs only Docker.
+                    sh '''
+                        docker run --rm -v "$PWD":/app -w /app python:3.12-slim \
+                          sh -c "pip install -q -r requirements-dev.txt && pytest -q"
+                    '''
+                }
+            }
+        }
+
+        stage('Build images') {
+            parallel {
+                stage('Backend') {
+                    steps {
+                        dir("${APP_DIR}/backend") {
+                            // --provenance=false: Lambda rejects OCI image indexes created by buildx attestations.
+                            sh '''
+                                docker build --platform linux/amd64 --provenance=false \
+                                  -t $BACKEND_REPO:$IMAGE_TAG -t $BACKEND_REPO:latest .
+                            '''
+                        }
+                    }
+                }
+                stage('Frontend') {
+                    steps {
+                        dir("${APP_DIR}/frontend") {
+                            sh '''
+                                docker build --build-arg API_BASE_URL=$API_BASE_URL \
+                                  -t $FRONTEND_REPO:$IMAGE_TAG -t $FRONTEND_REPO:latest .
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Push to ECR') {
+            when { expression { params.DEPLOY } }
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+                    sh '''
+                        aws ecr get-login-password --region $AWS_REGION \
+                          | docker login --username AWS --password-stdin $ECR_REGISTRY
+                        for repo in $BACKEND_REPO $FRONTEND_REPO; do
+                          docker tag $repo:$IMAGE_TAG $ECR_REGISTRY/$repo:$IMAGE_TAG
+                          docker tag $repo:latest     $ECR_REGISTRY/$repo:latest
+                          docker push $ECR_REGISTRY/$repo:$IMAGE_TAG
+                          docker push $ECR_REGISTRY/$repo:latest
+                        done
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy') {
+            when { expression { params.DEPLOY } }
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
+                    sh '''
+                        # Backend: point the Lambda at the new image and wait for it to go live
+                        aws lambda update-function-code --region $AWS_REGION \
+                          --function-name $LAMBDA_FUNCTION \
+                          --image-uri $ECR_REGISTRY/$BACKEND_REPO:$IMAGE_TAG
+                        aws lambda wait function-updated --region $AWS_REGION --function-name $LAMBDA_FUNCTION
+
+                        # Frontend: run the nginx container on this host (port 80)
+                        docker rm -f student-result-frontend || true
+                        docker run -d --name student-result-frontend --restart unless-stopped \
+                          -p 80:80 $FRONTEND_REPO:$IMAGE_TAG
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always  { sh 'docker image prune -f || true' }
+        success { echo "Build #${env.BUILD_NUMBER} succeeded." }
+        failure { echo "Build #${env.BUILD_NUMBER} failed." }
+    }
+}
